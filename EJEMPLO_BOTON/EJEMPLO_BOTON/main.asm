@@ -48,7 +48,7 @@ MAIN_LOOP:
 // NON-Interrupt subroutines
 DELAY:
 	LDI		R19, 255
-LOOP_DELAY
+LOOP_DELAY:
 	DEC		R19
 	BRNE	LOOP_DELAY
 	RET
@@ -57,4 +57,3 @@ LOOP_DELAY
 
 /****************************************/
 
-Este tema está cerrado para comentarios.
