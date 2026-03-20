@@ -1,0 +1,16 @@
+BANDERA ACCION
+7 6 5 4 3 2 1 0
+0 0 0 0 0 0 0 0
+          | | |__ MODIFICAR RELOJ
+          | |____ MODIFICAR FECHA
+          |______ MODIFICAR VALORES ALARMA
+
+
+BANDERA ESTADO
+7 6 5 4 3 2 1 0
+0 0 0 0 0 0 0 0
+      | | | | |__ CONTINUAR TIMER 1
+      | | | |____ PARAR TIMER 1
+      | | |______ ALARMA ACTIVA
+      | |________ BUZZER ENCENDID
+      |__________ MULTIPLEXADO APAGADO
