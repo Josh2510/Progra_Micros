@@ -8,7 +8,6 @@
 // Encabezado (Libraries)
 #define F_CPU 16000000
 #include <avr/io.h>
-#include <util/delay.h>
 #include <avr/interrupt.h>
 #include "PWM0/PWM0.h"
 #include "PWM1/PWM1.h"
@@ -18,7 +17,6 @@
 // Function prototypes
 void setup();
 void ADC_init();
-void TMR0_init();
 
 volatile uint16_t servo1 = 0;
 volatile uint16_t servo2 = 0;
