@@ -64,21 +64,23 @@ volatile uint8_t pos_read = 0;								// VARIABLE PARA DECIRLE DONDE DEBE DE LEE
 // Main Function
 int main(void)
 {
+	// LLAMA AL SETUP DEL PROGRAMA
 	setup();
+	// LLAMA AL SETEO DEL MODO INICIAL QUE ES MANUAL
 	set_estado();
 	while (1)
 	{
-		if (band_dato)
+		if (band_dato) // SI LA BANDERA DE DATO SE ENCIENDE, ES QUE TODOS LOS DATOS ENVIADOS DESDE UART HAN LLEGADO
 		{
-			band_dato = 0;
-			if (tipo_feed == 'E')
+			band_dato = 0; // SE APAGA LA BANDERA
+			if (tipo_feed == 'E') // SE REVISA QUE TIPO DE FEED ES, E ES FEED ESTADO, P ES FEED DE POSICION DE EEPROM, Y DE U A Z SON MOTORES
 			{
 				ESTADO_SEGUN_UART(receptor);
 			} 
-			else if ((tipo_feed == 'P') && (estado_actual == 1))
-			{
-				LEER_EEPROM(receptor);
-			}
+			else if ((tipo_feed == 'P') && (estado_actual == 1)) // COMPRUEBA QUE TIPO DE FEEED ES Y SI ESTA EN EL ESTADO CORRECTO
+			{													// ESTADO 0 ES MANUAL
+				LEER_EEPROM(receptor);							// ESTADO 1 ES EEPROM
+			}													// ESTADO 2 ES SERIAL
 			else if ((tipo_feed == 'U') && (estado_actual == 2))
 			{
 				SETEAR_MOTOR(1, receptor);
@@ -104,19 +106,19 @@ int main(void)
 				SETEAR_MOTOR(6, receptor);
 			}
 		}
-		else if (estado_actual == 0)
+		else if (estado_actual == 0) // SI LA BANDERA DE DATOS NO ESTA ACTIVADA SE REVISA SI ES ESTADO MANUAL
 		{
-			MANUAL();
+			MANUAL();	// SI ES ASI, SE LLAMA FUNCION DE ACTUALIZACION DE DATOS DE PWM
 			if (bandera_guardar == 1)
-			{
-				ESCRIBIR_EEPROM();
-				bandera_guardar = 0;
-				writeString("G\n");
+			{ // SI LA BANDERA DE GUARDAR ESTA ENCENDIDA ES PORQUE SE QUIERE GUARDAR DATOS EN EEPROM
+				ESCRIBIR_EEPROM();   // SE LLAMA FUNCION DE GUARDADO EN EEPROM
+				bandera_guardar = 0; // SE APAGA BANDERA
+				writeString("G\n");	// SE ENVIA UN STRING PARA QUE EN PYTHON SE IMPRIMA QUE SE PUDO GUARDAR EN EEPROM
 			}
 		}
-		else if (bandera_estado == 1)
+		else if (bandera_estado == 1) // ESTA BANDERA FUNCIONA PARA VER SI SE DEBE DE CAMBIAR DE ESTADO
 		{
-			bandera_estado = 0;
+			bandera_estado = 0; // SE APAGA LA BANDERA Y SE LLAMA A LA FUNCION DE CAMBIAR ESTADO, YA QUE SE HABRA AUMENTADO EL VALOR DE ESTADO EN LA INTERRUPCION
 			set_estado();
 		}
 	}
@@ -154,15 +156,17 @@ void ADC_init()
 }
 void MANUAL()
 {
+	// LLAMADA A CADA FUNCION PARA ACTUALIZAR LOS DATOS
 	UPDATE_Duty_Cycle_PWM0A(6.0 + ((float)brazo_derecho * 31.0) / 255.0);
 	UPDATE_Duty_Cycle_PWM0B(6.0 + ((float)brazo_izquierdo * 31.0) / 255.0);
-	UPDATE_Duty_Cycle_PWM1A(800.0 + ((float)ojo_derecho * 4000.0) / 255.0);
-	UPDATE_Duty_Cycle_PWM1B(800.0 + ((float)ojo_izquierdo * 4000.0) / 255.0);
+	UPDATE_Duty_Cycle_PWM1A(800.0 + ((float)ojo_derecho * 2000.0) / 255.0);
+	UPDATE_Duty_Cycle_PWM1B(800.0 + ((float)ojo_izquierdo * 2000.0) / 255.0);
 	UPDATE_Duty_Cycle_PWM2A(6.0 + ((float)rueda_derecha * 31.0) / 255.0);
 	UPDATE_Duty_Cycle_PWM2B(6.0 + ((float)rueda_izquierda * 31.0) / 255.0);
 }
 void set_estado()
 {
+	// SETEA LOS ESTADOS CON EL BOTON DEL CONTROL
 	switch(estado_actual)
 	{
 	case 0:
@@ -178,6 +182,7 @@ void set_estado()
 }
 void ESTADO_SEGUN_UART(unsigned char estado)
 {
+	// SETEA ESTADOS DESDE EL ADAFRUIT
 	switch (estado)
 	{
 	case 'M':
@@ -196,9 +201,11 @@ void ESTADO_SEGUN_UART(unsigned char estado)
 }
 void ESCRIBIR_EEPROM()
 {
+	// MANDA A ESCRIBIR EN EEPROM EN LA POSICION QUE ESTA
 	uint8_t direccion = pos_EEPROM[pos_write];
 	for (uint8_t i = 0; i<6; i++)
 	{
+		// SE HACE UN FOR DESDE 0 A 5 PARA GUARDAR TODOS LOS DATOS
 		switch (i)
 		{
 		case 0:
@@ -220,15 +227,19 @@ void ESCRIBIR_EEPROM()
 			eepromWrite(direccion,rueda_izquierda);
 			break;
 		}
+		// SE AUMENTA LA DIRECCION CADA VEZ QUE SE TERMINA EL SWITCH
 		direccion++;
 	}
+	// SE CICLA LA POSICION DE ESCRITURA ENTRE 0 Y 3
 	pos_write = (pos_write + 1) & 0x03;
 }
 void LEER_EEPROM(uint8_t posicion)
 {
+	// PARA LEER DESDE EEPROM SE USA UNA POSICION QUE ES MANDADA DESDE DONDE SE LLAMA LA FUNCION
 	uint8_t direccion = pos_EEPROM[posicion];
 	for (uint8_t i = 0; i<6; i++)
 	{
+		// SE USA FOR PARA RECIBIR TODOS LOS DATOS Y DEPENDIENDO DE EN QUE NUMERO ESTE I, SE LLAMA UNA FUNCION DIFERENTE PARA ACTUALIZAR DATOS DE LOS PWM
 		uint8_t dato_eeprom = eepromRead(direccion);
 		switch (i)
 		{
@@ -251,11 +262,14 @@ void LEER_EEPROM(uint8_t posicion)
 			UPDATE_Duty_Cycle_PWM2B(6.0 + ((float)dato_eeprom * 31.0) / 255.0);
 			break;
 		}
+		// SE AUMENTA LA DIRECCION DESPUES DEL SWITCH CASE
 		direccion++;
 	}
 }
 void SETEAR_MOTOR(uint8_t n_motor, uint8_t valor)
 {
+	// FUNCION QUE FUNCIONA CON COMUNICACION SERIAL, SE LE ENVIA EL NUMERO DE MOTOR Y QUE VALOR DEBE DE TENER Y USA UN SWITCH CASE PARA PONER ESE
+	// VALOR EN LA VARIABLE CORRESPONDIENTE
 	switch (n_motor)
 	{
 	case 1:
@@ -277,12 +291,14 @@ void SETEAR_MOTOR(uint8_t n_motor, uint8_t valor)
 		rueda_izquierda = valor;
 		break;
 	}
+	// DESPUES SE LLAMA A LA FUNCION MANUAL PARA QUE SE ACTUALICEN LOS DATOS
 	MANUAL();
 }
 /****************************************/
 // Interrupt routines
 ISR(ADC_vect)
 {
+	// SE HACE UN SWITCH CASE PARA IR CAMBIANDO EL CANAL QUE SE LEE, DESPUES DE HABER HECHO UNA LECTURA
 	switch (contador_ADC)
 	{
 		case 0:
@@ -314,34 +330,34 @@ ISR(ADC_vect)
 		ADMUX = (1 << REFS0);
 		break;
 	}
-	contador_ADC++;
-	contador_ADC %= 6;
-	ADCSRA |= (1 << ADSC);
+	contador_ADC++;						// DESPUES DEL SWITCH CASE SE AUMENTA EL CONTADOR
+	contador_ADC %= 6;					// SE HACE EL RESIDUO DE UNA DIVISION CON 6 PARA QUE VAYA ROTANDO 0-1-2-3-4-5-0
+	ADCSRA |= (1 << ADSC);				// SE VUELVE A LEER EL ADC
 }
 ISR(PCINT2_vect)
 {
-	bandera_guardar = 0;
-	if (!(PIND & (1 << PIND4)))
+	bandera_guardar = 0;				// SE APAGA LA BANDERA DE GUARDAR
+	if (!(PIND & (1 << PIND4)))			// SE REVISA SI ES EL PIND4
 	{
-		estado_actual++;
-		estado_actual = estado_actual % 3;
-		bandera_estado = 1;
+		estado_actual++;				// SI ASI ES, SE AUMENTA LA VARIABLE DE ESTADO
+		estado_actual = estado_actual % 3;	// SE CICLA ENTRE 0-1-2
+		bandera_estado = 1;				// SE ENCIENDE BANDERA DE ESTADO
 	} 
 	else if ((!(PIND & (1 << PIND2))) && (estado_actual == 0))
 	{
-		bandera_guardar = 1;
+		bandera_guardar = 1;			// SI NO ES PIND4, REVISA SI ES PIND2, SI ASI ES Y ESTA EN ESTADO MANUAL, SE ACTIVA LA BANDERA DE GUARDAR.
 	}
 }
 ISR(USART_RX_vect)
 {
-	uint8_t valor = UDR0;
-	dato[contador_dato++] = valor;
-	if (contador_dato >= 2)
-	{
-		tipo_feed = dato[0];
-		receptor = dato[1];
+	uint8_t valor = UDR0;				// SE RECIBE DE LA COMUNICACION SERIAL UN VALOR
+	dato[contador_dato++] = valor;		// SE METE EN UN ARRAY DE 2
+	if (contador_dato >= 2)				// SE REVISA SI EL CONTADOR DE DATOS ES IGUAL A 2, SI ASI ES, ESO INDICA QUE SE MANDARON 2 BYTES DE INFORMACION
+	{									// POR LO QUE SE ENTIENDE QUE SE ENVIO TODOS LOS DATOS QUE SE NECESITABAN
+		tipo_feed = dato[0];			// LA PRIMERA POSICION SE PONE EN TIPO DE FEED
+		receptor = dato[1];				// LA SEGUNDA POSICION SE PONE EN RECEPTOR, QUE ES UN VALOR O UNA LETRA
 		
-		contador_dato = 0;
-		band_dato = 1;
+		contador_dato = 0;				// SE REINICIA LA VARIABLE DE CONTADOR DE DATOS
+		band_dato = 1;					// SE ENCIENDE LA BANDERA DE DATOS
 	}
 }
