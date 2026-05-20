@@ -28,8 +28,10 @@ int main(void)
 
 void setup()
 {
-	ADC_init();
-	PWM0_init();
+	DDRD = (1 << DDD6) | (1 << DDD5) | (1 << DDD3);
+	DDRB = (1 << DDB3) | (1 << DDB2) | (1 << DDB1);
+	PORTD = (1 << PORTD6) | (1 << PORTD5) | (1 << PORTD3);
+	PORTB = (1 << PORTB3) | (1 << PORTB2) | (1 << PORTB1);
 }
 void ADC_init()
 {
